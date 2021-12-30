@@ -13,3 +13,5 @@
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
+// OpenGL Header Files
+#include <gl/GL.h>

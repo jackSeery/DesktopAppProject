@@ -4,12 +4,16 @@
 #include "framework.h"
 #include "DesktopAppProject.h"
 
+#pragma comment (lib, "opengl32.lib")
+
 #define MAX_LOADSTRING 100
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
+HDC ourWindowHandleToDeviceContext;				// device context window handle
+HGLRC ourOpenGLRenderingContext;				// current openGL rendering context
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -130,6 +134,40 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
+	case WM_CREATE:
+		{
+			PIXELFORMATDESCRIPTOR pfd =
+			{
+				sizeof(PIXELFORMATDESCRIPTOR),
+				1,
+				PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    //Flags
+				PFD_TYPE_RGBA,        // The kind of framebuffer. RGBA or palette.
+				32,                   // Colordepth of the framebuffer.
+				0, 0, 0, 0, 0, 0,
+				0,
+				0,
+				0,
+				0, 0, 0, 0,
+				24,                   // Number of bits for the depthbuffer
+				8,                    // Number of bits for the stencilbuffer
+				0,                    // Number of Aux buffers in the framebuffer.
+				PFD_MAIN_PLANE,
+				0,
+				0, 0, 0
+			};
+
+			ourWindowHandleToDeviceContext = GetDC(hWnd);
+
+			int  letWindowsChooseThisPixelFormat;
+			letWindowsChooseThisPixelFormat = ChoosePixelFormat(ourWindowHandleToDeviceContext, &pfd);
+			SetPixelFormat(ourWindowHandleToDeviceContext, letWindowsChooseThisPixelFormat, &pfd);
+
+			ourOpenGLRenderingContext = wglCreateContext(ourWindowHandleToDeviceContext);
+			wglMakeCurrent(ourWindowHandleToDeviceContext, ourOpenGLRenderingContext);
+
+			MessageBoxA(0, (char*)glGetString(GL_VERSION), "OPENGL VERSION", 0);
+		}
+		break;
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
@@ -157,7 +195,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_DESTROY:
-        PostQuitMessage(0);
+		wglMakeCurrent(ourWindowHandleToDeviceContext, NULL);
+		wglDeleteContext(ourOpenGLRenderingContext);
+		PostQuitMessage(0);
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
